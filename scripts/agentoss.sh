@@ -127,6 +127,12 @@ cmd_site() {
   echo "baseUrl: $BASE_URL"
 }
 
+# 只印 baseUrl（給 curl / 腳本組網址用）
+cmd_baseurl() {
+  require_config
+  printf '%s\n' "$BASE_URL"
+}
+
 cmd_key() {
   mkdir -p "$CONFIG_DIR"
   grep -qx 'credentials' "$CONFIG_DIR/.gitignore" 2>/dev/null || echo 'credentials' >> "$CONFIG_DIR/.gitignore"
@@ -240,6 +246,7 @@ usage() {
 
   init <site> [baseUrl]              綁定開發站點（內建：99agent、irich；其他站點需給 baseUrl）
   site                               顯示目前綁定
+  baseurl                            只印 baseUrl（組 curl 網址用）
   key                                從 stdin 存入 PAT 到 .agentoss/credentials（gitignored）
   api <METHOD> <path> [body.json|-]  呼叫 Agent API（自動帶 auth / idempotency / baseUrl）
   curl <curl args...>                帶好 Authorization 的裸 curl（multipart 上傳等）
@@ -256,6 +263,7 @@ EOF
 case "${1:-}" in
   init)        shift; cmd_init "$@" ;;
   site)        shift; cmd_site "$@" ;;
+  baseurl)     shift; cmd_baseurl "$@" ;;
   key)         shift; cmd_key "$@" ;;
   api)         shift; cmd_api "$@" ;;
   curl)        shift; cmd_curl "$@" ;;

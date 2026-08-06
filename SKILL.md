@@ -13,6 +13,25 @@ description: >-
 Developer App 的完整開發流程：建立 → 設定欄位或 Rich UI → 定價 → 寫 main.py →
 secrets → 部署 Cloud Run → 測試任務 → 送審。
 
+> **術語先讀 [CONTEXT.md](CONTEXT.md)**——平台有**四種不同的憑證／token**
+> （開發者 PAT／App API key／mission_token／callback token），混用必定出錯。
+
+## -1. 自我更新檢查（每次觸發時執行）
+
+> 若已裝 SessionStart hook（見 README「保持更新」），本階段會被節流跳過，不必重複執行。
+
+```bash
+bash scripts/check-update.sh
+```
+
+- **零相依**（只用 bash + curl），任何專案下都能跑。
+- **無輸出 = 沒事**：已是最新版、離線、或 24 小時內已檢查過都會靜默結束，直接進第 0 節。
+- **有輸出 = 有新版**：把版本落差與變更摘要告知使用者，**詢問是否更新**。
+  - 同意 → 執行腳本印出的更新指令，完成後**重新讀取 `SKILL.md` 與相關 `references/`**，
+    讓新版指令在本回合生效。
+  - 拒絕或無回應 → 照舊繼續，不阻斷開發流程。
+- **絕不自動覆寫**：使用者可能改過本地檔案，未取得同意前不要執行更新指令。
+
 ## 0. 站點綁定（最重要的規則）
 
 **PAT（開發者 Agent key）與開發者權限是跨站點共用的**：同一把 `dev_sk_` key 在
@@ -71,6 +90,31 @@ bash scripts/agentoss.sh api POST /api/agent/apps /tmp/app.json
 `Authorization` / `Content-Type` / `Idempotency-Key`，並強制走綁定站點的 baseUrl。
 完整端點契約見 [references/api-reference.md](references/api-reference.md)。
 
+## 2.5. Review 現況（★ 對既有 App 動手前必做）
+
+> 只有「全新建立 App」可跳過。要改動、除錯、續開發任何**既有** App，
+> 一律先盤點再動手——沒看現況就疊代，最常見的後果是蓋掉別人的欄位或重複部署。
+
+```bash
+APP=<appId>
+bash scripts/agentoss.sh api GET /api/agent/apps/$APP                 # metadata / fields / billing / webhookUrl
+bash scripts/agentoss.sh api GET /api/agent/apps/$APP/code            # 現有 main.py 草稿與 extraPackages
+bash scripts/agentoss.sh api GET /api/agent/apps/$APP/secrets         # 已設定的 env 名稱（值不會回傳）
+bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/deployments?limit=5"
+bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
+```
+
+盤點後向使用者輸出簡短報告，**確認理解現況才進入開發**：
+
+1. **狀態**：`status`（`published` → 不能直接改，先 Clone Version）、`version`、`uiMode`
+2. **部署現況**：`webhookUrl` 有無（＝正式部署過沒有）、最近部署的 environment／status；
+   **有進行中的部署就先等它結束**，否則新部署會 409
+3. **欄位**：現有欄位清單——要改用 `merge` 模式增補，用 `replace` 會刪掉未提及的欄位
+4. **程式碼**：既有 `main.py` 與 `extraPackages`（PUT 是 partial update，沒帶的欄位保留）
+5. **Secrets**：已設定的 env 名稱——程式碼引用的 key 是否都在清單裡
+6. **近期 runs**：有沒有 `failed` / 卡 `pending` 的任務（線索見
+   [references/troubleshooting.md](references/troubleshooting.md)）
+
 ## 3. 開發生命週期（標準流程）
 
 按順序執行；每一步完成後**用 GET 讀回驗證**，不要只看寫入回應就宣告完成。
@@ -109,18 +153,32 @@ bash scripts/agentoss.sh api POST /api/agent/apps /tmp/app.json
 
 - 每個寫入操作後用對應 GET 讀回，確認欄位真的變了。
 - 部署必須 poll 到 `deployed`；`failed` 就讀 `buildLogTail` 修到過。
-- 「開發完成」的定義：**至少一次 test-run 跑到 `completed` 且 output 內容正確**。
-  只有 tsc / 語法通過不算完成。
+- 「開發完成」的定義：**至少一次 test-run 跑到 `completed`，且 output 是你模組產的內容**。
+  ⚠️ output 出現「is_test 煙霧測試…」代表你的 callback 根本沒進來——那是平台合成的
+  結果，**不算通過**（見 [references/platform-behaviors.md](references/platform-behaviors.md) §2）。
 - 送審前把 submit-review 的門檻自查一遍（name / description / category / version /
   fields 或 richUi / production deployment / completed run）。
 
-## 6. Reference 索引
+## 6. 出錯時
+
+**先查 [references/troubleshooting.md](references/troubleshooting.md) 對症狀，不要自行推測修法。**
+
+特別注意「設定問題 vs 程式問題」的分流：secrets 沒重新部署、還沒部署就 test-run、
+站點綁錯——這些**改幾次程式碼結果都一樣**。狀態碼語義：
+**400** 輸入不合法｜**401** token 無效｜**403** 明令禁止的操作｜
+**404** 不存在或不屬於這把 key｜**409** 狀態衝突（published／併發部署／送審門檻）。
+
+## 7. Reference 索引
 
 | 檔案 | 內容 |
 |---|---|
+| [CONTEXT.md](CONTEXT.md) | ★ 術語表——四種憑證／token、站點綁定、生命週期詞彙 |
 | [references/api-reference.md](references/api-reference.md) | 全部 Agent API 端點、request/response、錯誤碼 |
 | [references/mission-and-callback.md](references/mission-and-callback.md) | main.py 收到的任務 payload、回應方式、callback 格式、credit API、檔案上傳、取消 |
 | [references/rich-ui.md](references/rich-ui.md) | Rich UI 開發：runtime（`$99agent`）、requestMission、沙箱限制 |
 | [references/billing.md](references/billing.md) | 定價與計費模式完整說明 |
+| [references/platform-behaviors.md](references/platform-behaviors.md) | **實測行為補遺**：與直覺不符的平台行為（callback 認證差異、煙霧測試語意、部署併發、Windows 雷） |
+| [references/troubleshooting.md](references/troubleshooting.md) | **出錯時**：錯誤速查表＋設定／程式問題分流 |
 | [templates/main.py](templates/main.py) | main.py 起手模板（FastAPI + callback + 取消處理） |
 | [templates/rich-ui.html](templates/rich-ui.html) | Rich UI 起手模板 |
+| [scripts/e2e-smoke.sh](scripts/e2e-smoke.sh) | 全端點回歸驗證（skill 迭代或平台改版後重跑） |

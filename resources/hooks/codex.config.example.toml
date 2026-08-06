@@ -1,0 +1,9 @@
+# Codex CLI（>= v0.124.0）session start hook：在 Skill 使用前先檢查更新。
+# 把 <SKILL_DIR> 換成本機 skill 實際路徑，再把本區塊合併進
+# ~/.codex/config.toml（全域）或 <repo>/.codex/config.toml（專案）。
+# 腳本只在有新版時才輸出，無更新／離線時完全靜默。
+
+[hooks]
+session_start = [
+  { command = "bash \"<SKILL_DIR>/scripts/check-update.sh\"", timeout_ms = 10000 },
+]
