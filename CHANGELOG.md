@@ -3,6 +3,12 @@
 本檔是 `scripts/check-update.sh` 更新提示的變更摘要來源：
 每個版本一節，節標題格式 `## <version> - <date>`，新版在上。
 
+## 0.3.2 - 2026-08-06
+
+- `platform-behaviors.md` §0：站點覆蓋度表註明以 `doctor` 實際輸出為準
+  （irich 的 5 組端點補齊中），並記錄補齊後的欄位差異
+  （`buildLogTail` / `version` 在委派供裝的站點恆為 `null`）
+
 ## 0.3.1 - 2026-08-06
 
 - 移除測試環境相關內容：skill 僅面向正式站點，避免污染 agent 上下文或誤導方向

@@ -25,10 +25,12 @@ bash scripts/agentoss.sh doctor
 | **deployments／deployments/preview** | ✅ | ❌ 404 |
 | **cover** | ✅ | ❌ 404 |
 
-**影響**：在 irich 站**無法透過 Agent API 完成完整開發流程**——寫不了 `main.py`、
-設不了 secrets、部署不了 Cloud Run。該站的模組後端由平台方以其他方式供裝
-（實測既有 finance 模組的 `webhookUrl` 是 `finance-<appId>-prod` 命名的 Cloud Run
-服務，非自助部署產物）。
+**影響**：在缺端點的站點**無法透過 Agent API 完成完整開發流程**——寫不了 `main.py`、
+設不了 secrets、部署不了 Cloud Run。該站的模組後端改由平台方以其他方式供裝。
+
+> irich 的這 5 組端點補齊中；以 `doctor` 的實際輸出為準，不要以本表為準。
+> 補齊後 irich 的部署欄位有兩點差異：`cloudRunService` 由供裝 API 提供，
+> `buildLogTail` 與 `version` 恆為 `null`（build 失敗改看 `buildConsoleUrl`）。
 
 **辨識方式**：這類 404 回的是 **HTML**（Next.js 找不到路由），
 不是 API 的 JSON 錯誤信封（`{"ok":false,...}`）。看到 `content-type: text/html`
