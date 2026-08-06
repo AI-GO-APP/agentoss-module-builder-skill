@@ -1,2 +1,8 @@
-# 本 skill 被 clone 進模組專案使用時的本地產物
+# 本 skill 被 clone 進模組專案使用時的本地產物。
+# 注意：只忽略憑證，不忽略整個 .agentoss/ ——config.json 是站點綁定（無機密），
+# 應該跟著專案進版控，讓團隊成員綁在同一個站點。
 .agentoss/credentials
+.agentoss/token.json
+
+# 測試殘留
+*.log

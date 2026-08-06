@@ -29,6 +29,14 @@ git clone https://github.com/AI-GO-APP/agentoss-module-builder-skill.git \
 3. 把 key 放進環境變數 `AGENTOSS_API_KEY`（web IDE 建議用專案 secrets 設定），
    或執行 `bash scripts/agentoss.sh key` 存到本機（自動 gitignore）。
 
+> ⚠️ **憑證要放你的 App 專案，不要放 skill 安裝目錄**。
+> 用 `npx skills` 之類的工具更新 skill 時，可能會刪掉整個 skill 資料夾再重建——
+> 放在裡面的 `.agentoss/credentials` 會直接消失，而且因為被 gitignore 忽略、
+> 不在任何 commit 裡，救不回來。執行 `agentoss.sh` 前先確認 CWD 是你的專案目錄。
+>
+> `.agentoss/config.json` 只有站點綁定（無機密），**建議跟著專案進版控**——
+> 團隊成員 clone 下來就綁在同一個站點，不會有人不小心把 App 建到別站。
+
 ## 核心概念：站點綁定
 
 PAT 與開發者權限**跨站點共用**，但 App 落點由「呼叫哪個網域」決定。

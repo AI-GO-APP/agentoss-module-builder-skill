@@ -20,7 +20,8 @@
 set -u
 
 REPO="AI-GO-APP/agentoss-module-builder-skill"
-RAW_BASE="https://raw.githubusercontent.com/$REPO/main"
+# 可覆寫：fork／鏡像指向自己的 raw base；測試時可指到本地 file:// 路徑
+RAW_BASE="${AGENTOSS_UPDATE_RAW_BASE:-https://raw.githubusercontent.com/$REPO/main}"
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_FILE="$HOME/.agentoss/update_check.json"
 FETCH_TIMEOUT=3

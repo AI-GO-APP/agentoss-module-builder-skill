@@ -35,18 +35,19 @@ bad()  { FAIL=$((FAIL+1)); echo "  ❌ $1"; }
 skip() { SKIP=$((SKIP+1)); echo "  ⏭  $1"; }
 step() { echo; echo "── $1"; }
 
-# call <method> <path> [bodyfile] → stdout=response body，狀態碼寫進 $LAST_STATUS
-call() {
-  local out; out="$(bash "$SK" api "$@" 2>"$TMP/status")"
-  LAST_STATUS="$(sed -n 's/^HTTP //p' "$TMP/status" | tail -n1)"
-  printf '%s' "$out"
-}
+# call <method> <path> [bodyfile] → stdout=response body；狀態碼寫進 $TMP/status。
+# 注意：call 多半在 $( ) 子 shell 裡跑，變數傳不回父層——狀態碼一律透過檔案傳遞，
+# 由父層的 last_status() 讀取。
+call() { bash "$SK" api "$@" 2>"$TMP/status"; }
+last_status() { sed -n 's/^HTTP //p' "$TMP/status" | tail -n1; }
+
 # expect <期望碼> <描述> ...args → 呼叫並比對狀態碼
 expect() {
   local want="$1" desc="$2"; shift 2
   RESP="$(call "$@")"
-  if [ "${LAST_STATUS:-}" = "$want" ]; then ok "$desc（HTTP $want）"
-  else bad "$desc（期望 $want，實得 ${LAST_STATUS:-無回應}）"; fi
+  local got; got="$(last_status)"
+  if [ "$got" = "$want" ]; then ok "$desc（HTTP $want）"
+  else bad "$desc（期望 $want，實得 ${got:-無回應}）"; fi
 }
 # has <字串> <描述> — 在最近一次 RESP 裡找
 has() {

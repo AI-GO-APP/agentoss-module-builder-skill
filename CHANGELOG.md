@@ -3,6 +3,17 @@
 本檔是 `scripts/check-update.sh` 更新提示的變更摘要來源：
 每個版本一節，節標題格式 `## <version> - <date>`，新版在上。
 
+## 0.2.1 - 2026-08-06
+
+- `e2e-smoke.sh`：修正狀態碼捕捉——`LAST_STATUS` 設在 command substitution 的子 shell
+  裡傳不回父層，導致每個端點都誤報「無回應」。改用檔案傳遞。
+  修正後對 UAT 實跑 **47 通過 / 0 失敗**（含兩次 Cloud Build 與 preview／production test-run）
+- `check-update.sh`：新增 `AGENTOSS_UPDATE_RAW_BASE` 覆寫（fork／鏡像可指向自己的
+  raw base；也讓更新邏輯本身可被測試）
+- `agentoss.sh`：新增 `baseurl` 子指令（組 curl 網址用）
+- README：補「憑證不要放 skill 安裝目錄」警告，並說明 `.agentoss/config.json`
+  應跟著專案進版控（站點綁定共享可避免團隊成員把 App 建到別站）
+
 ## 0.2.0 - 2026-08-06
 
 - **自我更新機制**：`VERSION` + 本檔 + `scripts/check-update.sh`（零相依 bash+curl，
