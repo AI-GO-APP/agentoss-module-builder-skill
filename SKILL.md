@@ -60,6 +60,11 @@ bash scripts/check-update.sh
    其他／未來站點：使用者提供該站正式網域，`init <code> <baseUrl>` 綁定。
 5. **禁止把 `agentoss.ai`（管理中台）當開發目標**——在那裡建立的 App 會誤落
    99agent 站點。`agentoss.sh` 會直接擋下這個 host。
+6. **綁定後先跑 `agentoss.sh doctor`**：站點是各自獨立的部署，**API 覆蓋度不保證相同**。
+   實測 `www.irich.cc` 缺 `/code`、`/secrets`、`/deployments`、`/cover`——
+   在該站無法透過 Agent API 寫 main.py 或部署。
+   **缺端點時要先告知使用者哪些步驟做不到**，不要做到一半才撞 404
+   （見 [references/platform-behaviors.md](references/platform-behaviors.md) §0）。
 
 ## 1. 憑證（PAT / Agent key）
 
@@ -78,8 +83,8 @@ bash scripts/check-update.sh
 # 1) 綁定站點（第一次、或使用者明說要換站點時）
 bash scripts/agentoss.sh init 99agent
 
-# 2) 驗證 key 與連線（列出自己名下的 App）
-bash scripts/agentoss.sh api GET /api/agent/apps
+# 2) 探測本站支援哪些端點（★ 各站是獨立部署，覆蓋度不一定相同）
+bash scripts/agentoss.sh doctor
 
 # 3) 建立草稿 App
 echo '{"name":"我的模組","description":"...","category":"general","uiMode":"form"}' > /tmp/app.json

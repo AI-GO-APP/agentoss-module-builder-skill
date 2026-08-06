@@ -172,6 +172,59 @@ cmd_api() { # api <METHOD> <path> [bodyfile|-]
   [ "$status" -lt 400 ]
 }
 
+# doctor — 探測綁定站點實際支援哪些 Agent API 端點。
+# 各站點是獨立部署，API 覆蓋度不一定相同（例：www.irich.cc 缺 code/secrets/
+# deployments/cover）。用 GET 探測：200/405 = 路由存在，404 = 該站沒有這個端點。
+# 全程唯讀、無副作用。
+cmd_doctor() {
+  require_config; require_key
+  local probe_app="${1:-}"
+  if [ -z "$probe_app" ]; then
+    probe_app="$(curl -sS "$BASE_URL/api/agent/apps" -H "Authorization: Bearer $API_KEY" \
+      | sed -n 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+  fi
+  [ -n "$probe_app" ] || die "站點上沒有可探測的 App。先建立一個，或指定：agentoss.sh doctor <appId>"
+
+  echo "站點：$SITE（$BASE_URL）"
+  echo "探測 App：$probe_app"
+  echo
+  local missing=0
+  probe() { # probe <path> <說明>
+    local code
+    code="$(curl -sS -o /dev/null -w '%{http_code}' \
+      -H "Authorization: Bearer $API_KEY" "$BASE_URL/api/agent/apps/$probe_app$1")"
+    case "$code" in
+      200|405) printf '  ✅ %-24s %s\n' "$1" "$2" ;;
+      401|403) printf '  🔒 %-24s %s（權限不足，路由存在）\n' "$1" "$2" ;;
+      404)     printf '  ❌ %-24s %s — 本站未提供\n' "$1" "$2"; missing=$((missing+1)) ;;
+      *)       printf '  ?  %-24s %s（HTTP %s）\n' "$1" "$2" "$code" ;;
+    esac
+  }
+  probe ""                      "讀取 App / 改 metadata"
+  probe "/fields"               "表單欄位"
+  probe "/rich-ui"              "Rich UI"
+  probe "/code"                 "main.py 程式碼"
+  probe "/secrets"              "環境變數"
+  probe "/deployments"          "Cloud Run 部署"
+  probe "/deployments/preview"  "預覽部署"
+  probe "/test-runs"            "測試任務"
+  probe "/callback-simulations" "callback 模擬"
+  probe "/runs"                 "任務紀錄"
+  probe "/cover"                "封面圖"
+  probe "/versions"             "Clone Version"
+  probe "/submit-review"        "送審"
+  probe "/apikey/rotate"        "App API key 旋轉"
+
+  echo
+  if [ "$missing" -gt 0 ]; then
+    echo "⚠ 本站缺 $missing 個端點：完整開發流程（寫 main.py → secrets → 部署）"
+    echo "  在此站無法透過 Agent API 完成，需由平台方以其他方式供裝。"
+    echo "  規劃工作前請先告知使用者，不要做到一半才撞 404。"
+  else
+    echo "本站支援完整開發流程。"
+  fi
+}
+
 cmd_curl() { # 逃生口：帶好 auth 的裸 curl（multipart 上傳等用）
   require_config; require_key
   curl -sS -H "Authorization: Bearer $API_KEY" "$@"
@@ -247,6 +300,7 @@ usage() {
   init <site> [baseUrl]              綁定開發站點（內建：99agent、irich；其他站點需給 baseUrl）
   site                               顯示目前綁定
   baseurl                            只印 baseUrl（組 curl 網址用）
+  doctor [appId]                     探測本站實際支援哪些 Agent API 端點（唯讀）
   key                                從 stdin 存入 PAT 到 .agentoss/credentials（gitignored）
   api <METHOD> <path> [body.json|-]  呼叫 Agent API（自動帶 auth / idempotency / baseUrl）
   curl <curl args...>                帶好 Authorization 的裸 curl（multipart 上傳等）
@@ -264,6 +318,7 @@ case "${1:-}" in
   init)        shift; cmd_init "$@" ;;
   site)        shift; cmd_site "$@" ;;
   baseurl)     shift; cmd_baseurl "$@" ;;
+  doctor)      shift; cmd_doctor "$@" ;;
   key)         shift; cmd_key "$@" ;;
   api)         shift; cmd_api "$@" ;;
   curl)        shift; cmd_curl "$@" ;;

@@ -4,6 +4,39 @@
 > 為什麼容易誤判、正確作法。API 規格本身見 `api-reference.md`。
 > （驗證基準：2026-08-06 UAT 全端點實測）
 
+## 0. 各站點的 API 覆蓋度不同（★ 動工前先 `doctor`）
+
+站點是**各自獨立的部署**，Agent API 的端點覆蓋度不保證一致。
+綁定站點後第一件事：
+
+```bash
+bash scripts/agentoss.sh doctor
+```
+
+2026-08-06 正式環境實測：
+
+| 端點 | all.99agent.app | www.irich.cc |
+|---|:---:|:---:|
+| 列表／讀取／改 metadata、fields、rich-ui | ✅ | ✅ |
+| test-runs、callback-simulations、runs | ✅ | ✅ |
+| versions、submit-review、apikey/rotate | ✅ | ✅ |
+| **code（main.py）** | ✅ | ❌ 404 |
+| **secrets** | ✅ | ❌ 404 |
+| **deployments／deployments/preview** | ✅ | ❌ 404 |
+| **cover** | ✅ | ❌ 404 |
+
+**影響**：在 irich 站**無法透過 Agent API 完成完整開發流程**——寫不了 `main.py`、
+設不了 secrets、部署不了 Cloud Run。該站的模組後端由平台方以其他方式供裝
+（實測既有 finance 模組的 `webhookUrl` 是 `finance-<appId>-prod` 命名的 Cloud Run
+服務，非自助部署產物）。
+
+**辨識方式**：這類 404 回的是 **HTML**（Next.js 找不到路由），
+不是 API 的 JSON 錯誤信封（`{"ok":false,...}`）。看到 `content-type: text/html`
+就是「本站沒有這個端點」，不是你的參數錯。
+
+**規劃工作時**：若使用者要在覆蓋度不完整的站點開發模組，**先講清楚哪些步驟做不到**，
+不要做到第 4 步才撞 404。
+
 ## 1. Agent API test-runs 的 callback 認證與正式任務不同（★ 最重要）
 
 - **正式任務**（前台表單執行）：`callback_url` 內含 `?token=`，模組直接 POST 即可。

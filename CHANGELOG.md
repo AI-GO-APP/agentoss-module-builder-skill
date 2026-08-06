@@ -3,6 +3,16 @@
 本檔是 `scripts/check-update.sh` 更新提示的變更摘要來源：
 每個版本一節，節標題格式 `## <version> - <date>`，新版在上。
 
+## 0.3.0 - 2026-08-06
+
+- **`agentoss.sh doctor`**：探測綁定站點實際支援哪些 Agent API 端點（唯讀無副作用）。
+  各站點是獨立部署，**API 覆蓋度不保證相同**——正式環境實測 `www.irich.cc` 缺
+  `/code`、`/secrets`、`/deployments`、`/deployments/preview`、`/cover`，
+  在該站無法透過 Agent API 寫 main.py 或部署 Cloud Run。
+- SKILL.md 快速開始改為「init → doctor」；站點綁定規則新增第 6 條
+- `references/platform-behaviors.md` §0：兩站端點覆蓋度對照表與辨識方式
+  （這類 404 回 HTML，非 API 的 JSON 錯誤信封）
+
 ## 0.2.1 - 2026-08-06
 
 - `e2e-smoke.sh`：修正狀態碼捕捉——`LAST_STATUS` 設在 command substitution 的子 shell
