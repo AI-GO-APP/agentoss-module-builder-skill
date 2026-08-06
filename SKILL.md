@@ -186,4 +186,6 @@ bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
 | [references/troubleshooting.md](references/troubleshooting.md) | **出錯時**：錯誤速查表＋設定／程式問題分流 |
 | [templates/main.py](templates/main.py) | main.py 起手模板（FastAPI + callback + 取消處理） |
 | [templates/rich-ui.html](templates/rich-ui.html) | Rich UI 起手模板 |
-| [scripts/e2e-smoke.sh](scripts/e2e-smoke.sh) | 全端點回歸驗證（skill 迭代或平台改版後重跑） |
+
+> `scripts/e2e-smoke.sh` 是 **skill 維護者**的回歸驗證工具，會在正式站建立真實 App
+> 與 Cloud Run 服務。**開發模組時不需要跑**，也不要主動建議使用者跑。

@@ -59,8 +59,7 @@ require_config() {
   [ -n "$SITE" ] && [ -n "$BASE_URL" ] || die "$CONFIG_FILE 內容不完整，請重跑 init"
   case "$BASE_URL" in
     *agentoss.ai*)
-      [ "${AGENTOSS_ALLOW_ANY_HOST:-}" = "1" ] || \
-        die "agentoss.ai 是管理中台，不是模組開發目標站點（在那裡建立的 App 會誤落 99agent）。請 init 綁定正確站點。" ;;
+      die "agentoss.ai 是管理中台，不是模組開發目標站點（在那裡建立的 App 會誤落 99agent）。請 init 綁定正確站點。" ;;
   esac
 }
 
@@ -93,12 +92,7 @@ cmd_init() {
     *) die "baseUrl 必須是 https:// 開頭的完整網址" ;;
   esac
   case "$base" in
-    *agentoss.ai*)
-      if [ "${AGENTOSS_ALLOW_ANY_HOST:-}" = "1" ]; then
-        echo "⚠ 綁定到 agentoss.ai 系網域（管理中台）。僅限平台方 UAT/測試——在此建立的 App 會落在 99agent 站點範疇。" >&2
-      else
-        die "agentoss.ai 是管理中台，不能綁定為開發目標站點（平台方測試可用 AGENTOSS_ALLOW_ANY_HOST=1 覆寫）"
-      fi ;;
+    *agentoss.ai*) die "agentoss.ai 是管理中台，不能綁定為開發目標站點" ;;
   esac
 
   if [ -f "$CONFIG_FILE" ]; then

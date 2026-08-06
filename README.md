@@ -93,17 +93,20 @@ bash scripts/check-update.sh --force
 | `scripts/check-update.sh` | 自我更新檢查（零相依） |
 | `scripts/e2e-smoke.sh` | 全端點回歸驗證 |
 
-## 回歸驗證
+## 回歸驗證（維護者用）
 
-skill 迭代或平台 API 改版後，對已綁定站點重跑全端點驗證：
+skill 改版或平台 API 改版後，確認 `references/` 沒有過時：
 
 ```bash
-bash scripts/e2e-smoke.sh --quick
+bash scripts/e2e-smoke.sh --confirm --quick
 ```
 
 不帶 `--quick` 會連 Cloud Run 部署與 test-run 一起驗（約 5 分鐘）。
-⚠️ 會在目標站點建立真實 App 與 Cloud Run 服務並消耗開發者點數，
-不要對正式站點大量重跑。
+
+> ⚠️ 這會在**正式站點**建立真實 App、部署真實 Cloud Run 服務、消耗開發者點數，
+> 因此必須顯式帶 `--confirm`。**開發模組時不需要跑這支。**
+> 測完的 App 會被設為 archived，但已送審者需管理員處理，
+> Cloud Run 服務需刪 App 才會一併拆除。
 
 ## 安全
 

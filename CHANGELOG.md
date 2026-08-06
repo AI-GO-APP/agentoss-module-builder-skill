@@ -3,6 +3,15 @@
 本檔是 `scripts/check-update.sh` 更新提示的變更摘要來源：
 每個版本一節，節標題格式 `## <version> - <date>`，新版在上。
 
+## 0.3.1 - 2026-08-06
+
+- 移除測試環境相關內容：skill 僅面向正式站點，避免污染 agent 上下文或誤導方向
+  - 拿掉 `AGENTOSS_ALLOW_ANY_HOST` 覆寫；`agentoss.ai` 系網域一律封鎖
+  - references 不再以特定環境作為驗證基準標註
+- `e2e-smoke.sh` 改為維護者工具：必須顯式帶 `--confirm` 才會執行
+  （會在正式站建立真實 App 與 Cloud Run 服務並消耗點數），
+  SKILL.md 明示「開發模組時不需要跑，也不要主動建議使用者跑」
+
 ## 0.3.0 - 2026-08-06
 
 - **`agentoss.sh doctor`**：探測綁定站點實際支援哪些 Agent API 端點（唯讀無副作用）。

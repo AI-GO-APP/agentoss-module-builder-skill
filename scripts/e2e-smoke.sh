@@ -1,24 +1,36 @@
 #!/usr/bin/env bash
 # =============================================================================
-# e2e-smoke.sh — Agent API 全端點回歸驗證
+# e2e-smoke.sh — Agent API 全端點回歸驗證【維護者工具，非開發流程的一部分】
 #
 # 對已綁定的站點跑一遍完整開發生命週期，驗證每個端點與硬規則仍如契約所述。
-# skill 每次迭代、或平台 API 改版後，用它確認 reference 沒有過時。
+# 用途：skill 改版、或平台 API 改版後，確認 references/ 沒有過時。
 #
-# 用法（在已 init 的專案目錄下）：
-#   bash scripts/e2e-smoke.sh              # 完整跑（含兩次 Cloud Build，約 5 分鐘）
-#   bash scripts/e2e-smoke.sh --quick      # 跳過部署與 test-run（約 20 秒）
-#   bash scripts/e2e-smoke.sh --keep       # 保留測試 App（預設測完 archive）
+# ⚠⚠ 這會在**正式站點**建立真實 App、部署真實 Cloud Run 服務、消耗開發者點數。
+#     測完的 App 會被設為 archived，但已送審者需管理員處理，Cloud Run 服務
+#     需刪 App 才會一併拆除。**開發模組時不需要、也不應該跑這支。**
 #
-# ⚠ 會在目標站點建立真實 App 與 Cloud Run 服務，並消耗開發者點數。
-#   不要對正式站點大量重跑；預設測完把 App 設為 archived。
+# 用法（在已 init 的專案目錄下，必須顯式帶 --confirm）：
+#   bash scripts/e2e-smoke.sh --confirm --quick   # 跳過部署與 test-run（約 20 秒）
+#   bash scripts/e2e-smoke.sh --confirm           # 完整（含兩次 Cloud Build，約 5 分鐘）
+#   bash scripts/e2e-smoke.sh --confirm --keep    # 保留測試 App（預設測完 archive）
 # =============================================================================
 set -u
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SK="$HERE/agentoss.sh"
-QUICK=0; KEEP=0
-for a in "$@"; do case "$a" in --quick) QUICK=1 ;; --keep) KEEP=1 ;; esac; done
+QUICK=0; KEEP=0; CONFIRM=0
+for a in "$@"; do case "$a" in --quick) QUICK=1 ;; --keep) KEEP=1 ;; --confirm) CONFIRM=1 ;; esac; done
+
+if [ "$CONFIRM" != "1" ]; then
+  cat >&2 <<'WARN'
+這是維護者用的回歸驗證工具，會在正式站點建立真實 App 與 Cloud Run 服務，
+並消耗開發者點數。開發模組時不需要跑這支。
+
+確定要跑，請加 --confirm：
+  bash scripts/e2e-smoke.sh --confirm --quick
+WARN
+  exit 1
+fi
 
 PASS=0; FAIL=0; SKIP=0
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
