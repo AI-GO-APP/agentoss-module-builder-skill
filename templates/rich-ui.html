@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Module — Rich UI</title>
+<!--
+  Agent OSS Rich UI 起手模板（詳見 references/rich-ui.md）
+  - 平台會自動注入 window.$99agent runtime（不要自己複製 runtime 程式碼）
+  - 流程：requestMission() 取得任務 → POST 到你自己的 Cloud Run 後端 → 後端 callback
+  - BACKEND_URL 填你正式部署後的 Cloud Run serviceUrl（GET /api/agent/apps/:appId 的 webhookUrl）
+-->
+<style>
+  body { font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; margin: 0; padding: 16px; }
+  .card { max-width: 560px; margin: 0 auto; display: grid; gap: 12px; }
+  label { font-size: 14px; font-weight: 600; }
+  input, textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; background: #111; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  #status { font-size: 14px; min-height: 20px; }
+  .error { color: #c0392b; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>我的模組</h2>
+
+  <div>
+    <label for="prompt">輸入內容</label>
+    <textarea id="prompt" rows="4" placeholder="描述你要的結果…"></textarea>
+  </div>
+
+  <button id="run">執行</button>
+  <div id="status"></div>
+  <div id="result"></div>
+</div>
+
+<script>
+  // TODO: 換成你自己的 Cloud Run 服務網址（正式部署後的 webhookUrl）
+  var BACKEND_URL = "https://YOUR-SERVICE.run.app";
+
+  var runBtn = document.getElementById("run");
+  var statusEl = document.getElementById("status");
+
+  function setStatus(text, isError) {
+    statusEl.textContent = text;
+    statusEl.className = isError ? "error" : "";
+  }
+
+  runBtn.addEventListener("click", async function () {
+    runBtn.disabled = true;
+    setStatus("建立任務中…");
+    try {
+      // iRich 站點的既有 runtime 名稱是 $nSchool，加防呆同時支援
+      var rt = window.$99agent || window.$nSchool;
+      if (!rt) throw new Error("平台 runtime 尚未注入（請在平台預覽頁測試）");
+
+      // 1) 向平台要求建立任務（平台處理使用權檢查與扣點）
+      var mission = await rt.requestMission();
+
+      // 2) 把任務 + UI 參數交給自己的後端（main.py 背景處理後回 callback_url）
+      setStatus("任務已建立（" + mission.mission_id + "），送交後端…");
+      var res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.assign({}, mission, {
+          prompt: document.getElementById("prompt").value
+        }))
+      });
+      if (!res.ok) throw new Error("後端回應 HTTP " + res.status);
+
+      setStatus("處理中——結果會回報到平台任務紀錄。");
+    } catch (err) {
+      // 點數不足／未取得使用權時 requestMission 會 reject
+      setStatus(err && err.message ? err.message : "執行失敗", true);
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
