@@ -23,18 +23,33 @@ app = FastAPI()
 _cancel_flags: dict[str, threading.Event] = {}
 
 
-def post_callback(callback_url: str, payload: dict) -> None:
-    """對 callback_url 回報。token 已內含在網址，不要再加 Authorization header。"""
+def post_callback(callback_url: str, payload: dict, headers: dict | None = None) -> None:
+    """對 callback_url 回報。
+
+    正式任務的 callback_url 已內含 ?token=，不需要額外 header；但 Agent API
+    test-runs 的 callback_url 沒帶 token，改以 payload 的 callback_auth 提供
+    認證 header——有給就帶上（防禦性支援，兩種路徑都相容）。
+    """
     try:
-        requests.post(callback_url, json=payload, timeout=30)
+        resp = requests.post(callback_url, json=payload, headers=headers or {}, timeout=30)
+        if resp.status_code >= 400:
+            print(f"[callback] HTTP {resp.status_code}: {resp.text[:200]}", flush=True)
     except Exception as exc:  # callback 失敗不要讓程式炸掉
         print(f"[callback] failed: {exc}", flush=True)
+
+
+def callback_headers(body: dict) -> dict:
+    auth = body.get("callback_auth") or {}
+    if isinstance(auth, dict) and auth.get("header") and auth.get("value"):
+        return {str(auth["header"]): str(auth["value"])}
+    return {}
 
 
 def process_mission(body: dict) -> None:
     mission_id = body.get("mission_id", "")
     app_id = body.get("app_id", "")
     callback_url = body.get("callback_url", "")
+    cb_headers = callback_headers(body)
     cancel = _cancel_flags.setdefault(mission_id, threading.Event())
 
     def report(status, message="", result=None, output=None):
@@ -45,7 +60,7 @@ def process_mission(body: dict) -> None:
             payload["result"] = result
         if output is not None:
             payload["output"] = output
-        post_callback(callback_url, payload)
+        post_callback(callback_url, payload, cb_headers)
 
     try:
         # ---- 讀取輸入欄位（key = 欄位 name，直接在 body 最上層）----------------

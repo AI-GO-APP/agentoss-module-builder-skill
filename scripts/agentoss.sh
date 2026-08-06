@@ -26,6 +26,9 @@ site_base_url() {
 
 die() { echo "錯誤：$*" >&2; exit 1; }
 
+# Windows Python 預設用系統 ANSI codepage 讀 stdin，中文 JSON 會變亂碼
+export PYTHONUTF8=1 PYTHONIOENCODING=utf-8
+
 # Windows 的 python3 可能是 Microsoft Store 假 stub——必須實際跑一次驗證
 PY=""
 for _p in python3 python; do
@@ -90,7 +93,12 @@ cmd_init() {
     *) die "baseUrl 必須是 https:// 開頭的完整網址" ;;
   esac
   case "$base" in
-    *agentoss.ai*) die "agentoss.ai 是管理中台，不能綁定為開發目標站點" ;;
+    *agentoss.ai*)
+      if [ "${AGENTOSS_ALLOW_ANY_HOST:-}" = "1" ]; then
+        echo "⚠ 綁定到 agentoss.ai 系網域（管理中台）。僅限平台方 UAT/測試——在此建立的 App 會落在 99agent 站點範疇。" >&2
+      else
+        die "agentoss.ai 是管理中台，不能綁定為開發目標站點（平台方測試可用 AGENTOSS_ALLOW_ANY_HOST=1 覆寫）"
+      fi ;;
   esac
 
   if [ -f "$CONFIG_FILE" ]; then

@@ -36,8 +36,11 @@
   - `api_key` 欄位會多一個 `<name>_mode` key：`user_api_key`（使用者自帶，
     `<name>` 是明文金鑰，直接用）或 `platform_credits`（`<name>` 為空字串，
     改用你在 secrets 設定的平台金鑰）。
-- `callback_url` **內含 token**，回呼時直接 POST 那個網址，
-  **不需要也不要再加任何 Authorization header**。
+- `callback_url`：正式任務（表單執行）**內含 `?token=`**，直接 POST 即可；
+  但 **Agent API test-runs 的 callback_url 目前沒帶 token**，改以 payload 的
+  `callback_auth`（`{ "header": "Authorization", "value": "Bearer <app-api-key>" }`）
+  提供認證。**模組應防禦性支援兩種**：body 有 `callback_auth` 就帶上該 header，
+  沒有就直接 POST（模板已內建此邏輯）。
 - 平台 POST timeout 30 秒、回非 2xx 會直接判任務失敗並退點——所以：
 
 **收到後立刻回 `{"accepted": true}`（HTTP 200），用 BackgroundTasks 背景處理。**
