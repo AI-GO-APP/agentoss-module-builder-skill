@@ -3,6 +3,12 @@
 本檔是 `scripts/check-update.sh` 更新提示的變更摘要來源：
 每個版本一節，節標題格式 `## <version> - <date>`，新版在上。
 
+## 0.3.3 - 2026-10-30
+
+- 補齊原 App ID 重新送審、修改／部署、管理員核准與讀回流程；停止把 clone 當作更新既有 App 的唯一方法。
+- 明確區分 App 版本、部署快照與獨立 clone，揭露 pending 狀態及正式部署立即切換 backend 的影響。
+- 更正 submit-review 的 draft-only／notes 描述，保留管理員審核界線與實際生成驗收要求，記錄舊部署版本標籤限制。
+
 ## 0.3.2 - 2026-08-06
 
 - `platform-behaviors.md` §0：站點覆蓋度表註明以 `doctor` 實際輸出為準
