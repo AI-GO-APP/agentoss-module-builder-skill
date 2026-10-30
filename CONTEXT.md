@@ -32,7 +32,7 @@
 
 | 詞 | 意義 |
 |---|---|
-| **draft / pending / published / unlisted / archived** | App 狀態機。Agent API 只能 draft ↔ archived 與送審（→pending）；published／rejected／下架只能走管理員後台 |
+| **draft / pending / published / unlisted / archived** | App 狀態機。Agent API 可編輯非 published App 並送審（包含 published 原 ID → pending）；核准為 published／rejected／下架只能走管理員後台。重新送審非獨立候選版本，見 references/update-existing-app.md |
 | **webhookUrl** | App 的正式 Cloud Run 服務網址。**唯讀**——只有正式部署的 deployer 會寫入 |
 | **preview / production 部署** | 同一份 code 草稿的兩個部署目標；preview 是隔離的 `-preview` 服務，不動 webhookUrl |
 | **test-run** | 開發者對自己 App 發的真實任務（`is_test`），不做上架／使用權檢查，扣**開發者自己**的點數 |

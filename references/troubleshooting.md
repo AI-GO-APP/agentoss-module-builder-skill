@@ -24,7 +24,7 @@
 | **401** `unauthorized` | token 缺或無效 | PAT 錯／已撤銷 |
 | **403** `forbidden_scope` | 明令禁止的操作 | 自行改 `status: published`／`rejected`；把已上架 App 改回 draft |
 | **404** `not_found` | App 不存在**或不屬於這把 key** | 跨帳號存取會偽裝成 404（刻意設計，不洩漏存在性） |
-| **409** `conflict` | 狀態衝突 | 編輯 published App（先 clone version）；同 env 併發部署；撤回已部署紀錄；送審門檻不足 |
+| **409** `conflict` | 狀態衝突 | 編輯 published App（同 ID 更新先重新送審；獨立 App 才 clone，見 update-existing-app.md）；同 env 併發部署；撤回已部署紀錄；送審門檻不足 |
 | **413** | Rich UI HTML 超過 2MB | 拆資產／壓縮 |
 | **502** `external_webhook_failed` | 下游失敗 | Rich UI 上傳到 GCS 失敗；test-run 打不到模組端點 |
 

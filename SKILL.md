@@ -111,7 +111,7 @@ bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
 
 盤點後向使用者輸出簡短報告，**確認理解現況才進入開發**：
 
-1. **狀態**：`status`（`published` → 不能直接改，先 Clone Version）、`version`、`uiMode`
+1. **狀態**：`status`（`published` 原 ID 更新先重新送審；獨立 App 才 clone）、`version`、`uiMode`
 2. **部署現況**：`webhookUrl` 有無（＝正式部署過沒有）、最近部署的 environment／status；
    **有進行中的部署就先等它結束**，否則新部署會 409
 3. **欄位**：現有欄位清單——要改用 `merge` 模式增補，用 `replace` 會刪掉未提及的欄位
@@ -140,8 +140,12 @@ bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
 | 11. 封面圖 | `POST /api/agent/apps/:appId/cover`（multipart） | `cover_sm/md/lg` JPG ≤5MB，缺的變體平台自動補 |
 | 12. 送審 | `POST /api/agent/apps/:appId/submit-review` | 硬門檻不足時回 409 + `details.missing[]`，逐項補齊再送 |
 
-改「已上架（published）」的 App：不能直接編輯，先
-`POST /api/agent/apps/:appId/versions` clone 出新草稿再走上表流程。
+改「已上架（published）」的 App，先分清使用者要的是：
+
+- **更新原 App**：保留 App ID，走 [references/update-existing-app.md](references/update-existing-app.md) 的重新送審 → 修改／部署 → 管理員核准流程。不要因為 published 回 409 就直接複製另一個 App。
+- **建立獨立 App**：才用 `POST /api/agent/apps/:appId/versions`。這個端點會產生新 ID，不會承接權益或替換舊 App。
+
+重新送審會把整個 App 改為 `pending`，可能暫時影響上架與使用；目前不是舊版持續上架的獨立候選版本機制。先備份、備妥改動與核准管道。
 
 ## 4. 硬規則（違反 = 平台直接拒絕）
 
@@ -149,7 +153,7 @@ bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
   `submit-review`，公開上架只有管理員後台審核一條路。
 - **`webhookUrl` 唯讀**：由正式部署自動寫入 Cloud Run serviceUrl，任何寫入
   嘗試回 400。要改後端 = 改 code 重新部署。
-- **published App 禁止直接改**：code / 正式部署 / metadata 都回 409，先 clone version。
+- **published App 禁止直接改**：code / 正式部署 / metadata 都回 409。更新同 App 先走重新送審並讀回 `pending`；只有使用者要另一個 App 時才 clone。不得直接改 DB 狀態、偽造管理員 session，或讓 PAT 自行核准。
 - **secrets write-only**：任何 API 都不回明文；改完要重新部署才生效。
 - **App API key 明文只在 create / rotate 當下出現一次**，要即刻交給使用者保存。
 - 金鑰一律 env 讀取（`os.environ`），寫死在 main.py 的程式碼不要產出。
@@ -178,6 +182,7 @@ bash scripts/agentoss.sh api GET "/api/agent/apps/$APP/runs?limit=10"
 | 檔案 | 內容 |
 |---|---|
 | [CONTEXT.md](CONTEXT.md) | ★ 術語表——四種憑證／token、站點綁定、生命週期詞彙 |
+| [references/update-existing-app.md](references/update-existing-app.md) | ★ 已上架 App 原 ID 更新、重新送審、部署及管理員核准；與 clone 的差異 |
 | [references/api-reference.md](references/api-reference.md) | 全部 Agent API 端點、request/response、錯誤碼 |
 | [references/mission-and-callback.md](references/mission-and-callback.md) | main.py 收到的任務 payload、回應方式、callback 格式、credit API、檔案上傳、取消 |
 | [references/rich-ui.md](references/rich-ui.md) | Rich UI 開發：runtime（`$99agent`）、requestMission、沙箱限制 |

@@ -83,9 +83,9 @@ PATCH {BASE}/api/agent/apps/:appId
 - `status` 只接受 `draft` / `archived`。`published` / `rejected` 回 403；
   `pending` 系列請走 submit-review。已上架／已下架的 App 不能自行改回 draft。
 - `webhookUrl` 唯讀，帶了直接 400。
-- published App 禁止直接編輯（409）→ 先 Clone Version。
+- published App 禁止直接編輯（409）。原 ID 更新走 [重新送審流程](update-existing-app.md)，不要自動 clone。
 
-### Clone Version（改 published App 的唯一途徑）
+### Clone Version（建立獨立 App）
 
 ```txt
 POST {BASE}/api/agent/apps/:appId/versions
@@ -95,7 +95,7 @@ POST {BASE}/api/agent/apps/:appId/versions
 { "version": "0.2.0", "copyFields": true, "copyRichUi": true, "notes": "..." }
 ```
 
-複製成新的 `draft`；新草稿 `webhookUrl` 一律為空（部署後拿到自己的服務網址）。
+複製成**不同 App ID** 的 `draft`，並產生新的 App API key；`webhookUrl` 一律為空（部署後取得自己的服務網址）。只複製部分設定與欄位，不複製 backend code/packages、secrets、會員權益、行銷權益分類、任務或部署歷史；沒有父子版本連結、自動替換舊 App 或會員遷移。
 
 ---
 
@@ -167,7 +167,7 @@ PUT {BASE}/api/agent/apps/:appId/code
 - 存的是**草稿**，不會自動部署；要生效需呼叫 deployments。
 - **Partial update**：沒帶的欄位保留原值；要清空明確傳 `""`；兩個都沒帶回 400。
 - `extraPackages` 一行一個 pip 套件（禁 shell 特殊字元）；`codeContent` ≤ 1MB。
-- published App 拒絕編輯（409）→ 先 Clone Version。
+- published App 拒絕編輯（409）；保留原 ID 的更新走 [重新送審流程](update-existing-app.md)。
 
 ---
 
@@ -278,17 +278,17 @@ POST {BASE}/api/agent/apps/:appId/submit-review
 ```
 
 ```json
-{ "notes": "Test run <run-id> completed.", "exampleRunId": "run-id" }
+{ "exampleRunId": "run-id" }
 ```
 
 硬門檻（缺項回 409 + `details.missing[]`）：
 
-- App 是 `draft`，且 name / description / category / version 齊全
+- name / description / category / version 齊全；目前沒有 draft-only 狀態檢查，published App 也可在同 ID 重新送審
 - form App 有 fields；rich_ui App 有 HTML
 - 有 `production` 環境、`deployed` 狀態的部署（`productionDeployment`）
 - 至少一次 completed run，或帶 `exampleRunId` / `overrideReason`
 
-送審後狀態 `pending`，等管理員審核。**API 無法直接把 App 變 published。**
+送審後同一 App 狀態為 `pending`，等管理員審核。**Agent API 無法直接把 App 變 published。** 更新既有 App 請先讀 [update-existing-app.md](update-existing-app.md)。`notes` 目前不會被此端點讀取或保存；`exampleRunId` 會改公開範例，沒有要更換時送 `{}`。既有 completed run / 部署可滿足門檻，但不能證明新程式已通過驗收。
 
 ### Console 限定（Agent API 刻意不開放）
 
